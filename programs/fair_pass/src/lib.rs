@@ -23,8 +23,8 @@ pub mod fair_pass {
         
         Ok(())
     }
-}
-pub fn mint_ticket_to_escrow(ctx: Context<MintTicket>) -> Result<()> {
+
+    pub fn mint_ticket_to_escrow(ctx: Context<MintTicket>) -> Result<()> {
         let event = &mut ctx.accounts.event;
 
         // 1. VALIDACIONES DE SEGURIDAD
@@ -137,6 +137,9 @@ pub fn mint_ticket_to_escrow(ctx: Context<MintTicket>) -> Result<()> {
 
         Ok(())
     }
+}
+
+
 
 #[derive(Accounts)]
 pub struct MintTicket<'info> {
