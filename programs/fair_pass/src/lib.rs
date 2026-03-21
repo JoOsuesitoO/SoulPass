@@ -56,6 +56,87 @@ pub fn mint_ticket_to_escrow(ctx: Context<MintTicket>) -> Result<()> {
 
         Ok(())
     }
+// --- LÓGICA PARA CAMBIAR ESTADO ---
+    pub fn trigger_event_status(ctx: Context<TriggerEventStatus>, new_status: EventStatus) -> Result<()> {
+        let event = &mut ctx.accounts.event;
+
+        // Solo podemos cambiar el estado si el evento está activo
+        require!(event.status == EventStatus::Active, CustomError::EventNotActive);
+
+        // Actualizamos el estado al nuevo (Completado o Cancelado)
+        event.status = new_status.clone();
+
+        // Si todo salió bien y el evento se COMPLETÓ, le pagamos al organizador
+        if new_status == EventStatus::Completed {
+            let balance = ctx.accounts.escrow.lamports(); // Vemos cuánto dinero hay en la bóveda
+            
+            // Para sacar dinero de una PDA, el Smart Contract tiene que "firmar" usando sus seeds
+            let event_key = event.key();
+            let bump = ctx.bumps.escrow;
+            let signer_seeds: &[&[&[u8]]] = &[&[
+                b"escrow",
+                event_key.as_ref(),
+                &[bump],
+            ]];
+
+            // Transferimos todo el saldo del escrow al organizador
+            let transfer_instruction = anchor_lang::system_program::Transfer {
+                from: ctx.accounts.escrow.to_account_info(),
+                to: ctx.accounts.organizer.to_account_info(),
+            };
+
+            anchor_lang::system_program::transfer(
+                CpiContext::new_with_signer(
+                    ctx.accounts.system_program.to_account_info(),
+                    transfer_instruction,
+                    signer_seeds
+                ),
+                balance
+            )?;
+            
+            msg!("¡Evento exitoso! Fondos liberados al organizador.");
+        } else if new_status == EventStatus::Cancelled {
+            msg!("Evento cancelado. Se habilita el reembolso para los usuarios.");
+        }
+
+        Ok(())
+    }
+// --- LÓGICA PARA EL REEMBOLSO ---
+    pub fn claim_refund(ctx: Context<ClaimRefund>) -> Result<()> {
+        let event = &ctx.accounts.event;
+
+        // VALIDACIÓN ESTRELLA: Solo se puede reembolsar si el evento fue cancelado explícitamente
+        // Si intentan hackear esto mientras está Activo o Completado, la blockchain los rechaza.
+        require!(event.status == EventStatus::Cancelled, CustomError::EventNotActive); // Podrías crear un error EventNotCancelled
+
+        // El contrato firma la salida del dinero de la PDA hacia el usuario
+        let event_key = event.key();
+        let bump = ctx.bumps.escrow;
+        let signer_seeds: &[&[&[u8]]] = &[&[
+            b"escrow",
+            event_key.as_ref(),
+            &[bump],
+        ]];
+
+        let transfer_instruction = anchor_lang::system_program::Transfer {
+            from: ctx.accounts.escrow.to_account_info(),
+            to: ctx.accounts.user.to_account_info(),
+        };
+
+        // Le devolvemos exactamente lo que costaba un boleto
+        anchor_lang::system_program::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(),
+                transfer_instruction,
+                signer_seeds
+            ),
+            event.price
+        )?;
+
+        msg!("Reembolso exitoso procesado para el usuario.");
+
+        Ok(())
+    }
 
 #[derive(Accounts)]
 pub struct MintTicket<'info> {
@@ -120,4 +201,46 @@ pub enum CustomError {
     EventNotActive,
     #[msg("Lo sentimos, los boletos están agotados.")]
     SoldOut,
+}
+
+// --- CONTEXTO PARA CAMBIAR ESTADO ---
+#[derive(Accounts)]
+pub struct TriggerEventStatus<'info> {
+    // La magia de seguridad: Solana verifica que el "organizer" que firma sea el mismo que creó el evento
+    #[account(mut, has_one = organizer)]
+    pub event: Account<'info, EventState>,
+
+    #[account(mut)]
+    pub organizer: Signer<'info>,
+
+    /// CHECK: Nuestra bóveda PDA
+    #[account(
+        mut,
+        seeds = [b"escrow", event.key().as_ref()],
+        bump
+    )]
+    pub escrow: SystemAccount<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+// --- CONTEXTO PARA EL REEMBOLSO ---
+#[derive(Accounts)]
+pub struct ClaimRefund<'info> {
+    #[account(mut)]
+    pub event: Account<'info, EventState>,
+
+    // El usuario que pide el reembolso
+    #[account(mut)]
+    pub user: Signer<'info>,
+
+    /// CHECK: La bóveda
+    #[account(
+        mut,
+        seeds = [b"escrow", event.key().as_ref()],
+        bump
+    )]
+    pub escrow: SystemAccount<'info>,
+
+    pub system_program: Program<'info, System>,
 }
