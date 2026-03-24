@@ -9,12 +9,15 @@ Una vez instaladas las dependencias, podemos inicar el programa con:
 npm run dev
 
 En la terminal se nos mostrará un mensaje como:
+
 <img width="377" height="144" alt="imagen" src="https://github.com/user-attachments/assets/648a87d2-3bd4-4876-ab10-ff89e8eb2969" />
 
 Hazemos ctrl + click en el primer enlace y se nos abrirá el proyecto en el navegador. Esta es la primera imagen que se verá:
+
 <img width="1357" height="628" alt="imagen" src="https://github.com/user-attachments/assets/56a07ca3-3730-4bb3-b5e6-a1d950c0aa4b" />
 
 En este programa podemos conectar nuestera wallet de solana con phanthom, haciendo click con este boton:
+
 <img width="246" height="47" alt="imagen" src="https://github.com/user-attachments/assets/80caf36f-c924-4848-9dd2-3477cdd33939" />
 
 Ademas, podemos ver 3 casos de demostración de como funciona nuestro programa en caso de:
