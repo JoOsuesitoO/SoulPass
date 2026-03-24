@@ -30,10 +30,3 @@ Nuestro Smart Contract (`lib.rs`) maneja tres escenarios principales de forma 10
 La arquitectura de nuestro Smart Contract ya incluye la base para integraciones CPI (*Cross-Program Invocation*). En la Fase 2, los fondos estacionados en el Escrow del evento se conectarán automáticamente a protocolos de liquidez de bajo riesgo en Solana (como Kamino o Solend). 
 
 Los rendimientos (Yield) generados por estos fondos se utilizarán para financiar el "Fondo de Resiliencia" y pagar los beneficios del SentiPass, creando un modelo económico sustentable.
-
-## Instalación y Uso Local
-
-### 1. Clonar el repositorio
-```bash
-git clone [https://github.com/TU_USUARIO/soulpass.git](https://github.com/TU_USUARIO/soulpass.git)
-cd soulpass
