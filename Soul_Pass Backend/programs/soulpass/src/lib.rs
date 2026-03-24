@@ -287,9 +287,7 @@ pub struct JoinWaitlist<'info> {
 
 #[derive(Accounts)]
 pub struct UpdateEventStatus<'info> {
-    //Feature de seguridad que permite que solo el organizador del evento/concierto sea el que puede cambiar el estado del mismo.
-    //Se desactivó para poder testear de mejor forma, pero se planea implementación en una etapa de producción.
-    //#[account(mut, has_one = organizer)]
+    #[account(mut, has_one = organizer)]
     pub event: Account<'info, EventState>,
     #[account(mut)]
     pub organizer: Signer<'info>,
